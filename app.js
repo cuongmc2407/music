@@ -12,9 +12,9 @@
         volume: 80,
         player: null,
         ready: false,
-        videoVisible: true,
         progressTimer: null,
         silentAudio: null, // For background keep-alive
+        audioCtx: null,    // For iOS keep-alive
         isUserPaused: false, // Distinguish between user and system pause
     };
 
@@ -63,17 +63,35 @@
     // --- Background Keep-Alive ---
     function initSilentAudio() {
         if (state.silentAudio) return;
-        // 1-second silent MP3 base64
+        // 10-second silent MP3 base64 (more robust for iOS)
         const silentSrc = 'data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGFtZTMuOThyA7VvAAAAAAAAAAAAAAA//uQZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZ28AAAAPAAAAAgAAAHMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
         state.silentAudio = new Audio(silentSrc);
         state.silentAudio.loop = true;
-        state.silentAudio.volume = 0.01;
+        state.silentAudio.volume = 0.05; // Slightly higher than 0.01 for iOS to recognize it
+        
+        // Also init AudioContext for iOS
+        try {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            if (AudioContext) {
+                state.audioCtx = new AudioContext();
+            }
+        } catch(e) {}
     }
 
     function startBackgroundKeepAlive() {
         if (!state.silentAudio) initSilentAudio();
+        
+        // Resume AudioContext
+        if (state.audioCtx && state.audioCtx.state === 'suspended') {
+            state.audioCtx.resume();
+        }
+
         state.silentAudio.play().catch(() => {
-            // Might fail if no interaction, but we call this on user play
+            // Fallback for user interaction requirement
+            document.addEventListener('click', () => {
+                state.silentAudio.play();
+                if (state.audioCtx) state.audioCtx.resume();
+            }, { once: true });
         });
     }
 
@@ -194,10 +212,14 @@
             startProgressTimer();
             updateMediaSessionPlaybackState();
         } else if (e.data === YT.PlayerState.PAUSED) {
-            // If the video pauses while the tab is hidden (e.g. screen off),
-            // and it wasn't a user-initiated pause, try to resume.
+            // iPhone/iOS logic: if it pauses in background, it's likely system-forced
             if (document.hidden && !state.isUserPaused) {
-                state.player.playVideo();
+                // Wait a bit and try to resume
+                setTimeout(() => {
+                    if (!state.isUserPaused && state.player && state.player.playVideo) {
+                        state.player.playVideo();
+                    }
+                }, 300);
                 return;
             }
             state.isPlaying = false;
@@ -774,11 +796,27 @@
                 startBackgroundKeepAlive();
                 
                 // Force YouTube to resume if it paused automatically
-                setTimeout(() => {
-                    if (state.isPlaying && state.player && state.player.playVideo) {
-                        state.player.playVideo();
+                // On iOS we might need to nudge it multiple times
+                let attempts = 0;
+                const resumeInterval = setInterval(() => {
+                    if (state.isPlaying && !state.isUserPaused && state.player && state.player.playVideo) {
+                        const ps = state.player.getPlayerState ? state.player.getPlayerState() : -1;
+                        if (ps !== YT.PlayerState.PLAYING) {
+                            state.player.playVideo();
+                        } else {
+                            clearInterval(resumeInterval);
+                        }
                     }
-                }, 100);
+                    attempts++;
+                    if (attempts > 5) clearInterval(resumeInterval);
+                }, 500);
+            }
+        });
+
+        // iOS specific: pagehide is often more reliable
+        window.addEventListener('pagehide', () => {
+            if (state.isPlaying && !state.isUserPaused) {
+                startBackgroundKeepAlive();
             }
         });
     }
