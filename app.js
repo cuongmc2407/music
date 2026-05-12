@@ -214,6 +214,7 @@
 
     function initPlayer() {
         state.player = new YT.Player('yt-player', {
+            host: 'https://www.youtube-nocookie.com',
             height: '100%', width: '100%',
             playerVars: {
                 autoplay: 0, controls: 0, modestbranding: 1,

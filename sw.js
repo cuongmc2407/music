@@ -7,6 +7,20 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-    // Basic fetch handler to keep the SW active
+    const url = new URL(event.request.url);
+    
+    // Block common YouTube ad domains
+    const adDomains = [
+        'doubleclick.net',
+        'googleads.g.doubleclick.net',
+        'googleadservices.com',
+        'googlesyndication.com',
+        'adservice.google.com'
+    ];
+    
+    if (adDomains.some(domain => url.hostname.includes(domain))) {
+        return event.respondWith(new Response('', { status: 204 }));
+    }
+
     event.respondWith(fetch(event.request));
 });
