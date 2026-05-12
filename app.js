@@ -15,6 +15,8 @@
         progressTimer: null,
         silentAudio: null, // For background keep-alive
         audioCtx: null,    // For iOS keep-alive
+        oscillator: null,  // Active oscillator
+        heartbeatTimer: null,
         isUserPaused: false, // Distinguish between user and system pause
     };
 
@@ -63,17 +65,24 @@
     // --- Background Keep-Alive ---
     function initSilentAudio() {
         if (state.silentAudio) return;
-        // 10-second silent MP3 base64 (more robust for iOS)
+        // 10-second silent MP3 base64
         const silentSrc = 'data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGFtZTMuOThyA7VvAAAAAAAAAAAAAAA//uQZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZ28AAAAPAAAAAgAAAHMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
         state.silentAudio = new Audio(silentSrc);
         state.silentAudio.loop = true;
-        state.silentAudio.volume = 0.05; // Slightly higher than 0.01 for iOS to recognize it
+        state.silentAudio.volume = 0.05;
         
         // Also init AudioContext for iOS
         try {
             const AudioContext = window.AudioContext || window.webkitAudioContext;
             if (AudioContext) {
                 state.audioCtx = new AudioContext();
+                // Create a continuous silent oscillator to keep the audio clock running
+                state.oscillator = state.audioCtx.createOscillator();
+                const gain = state.audioCtx.createGain();
+                gain.gain.value = 0.001; // Effectively silent
+                state.oscillator.connect(gain);
+                gain.connect(state.audioCtx.destination);
+                state.oscillator.start();
             }
         } catch(e) {}
     }
@@ -81,18 +90,40 @@
     function startBackgroundKeepAlive() {
         if (!state.silentAudio) initSilentAudio();
         
-        // Resume AudioContext
         if (state.audioCtx && state.audioCtx.state === 'suspended') {
             state.audioCtx.resume();
         }
 
         state.silentAudio.play().catch(() => {
-            // Fallback for user interaction requirement
-            document.addEventListener('click', () => {
+            // User interaction fallback
+            const resume = () => {
                 state.silentAudio.play();
                 if (state.audioCtx) state.audioCtx.resume();
-            }, { once: true });
+                document.removeEventListener('click', resume);
+            };
+            document.addEventListener('click', resume);
         });
+
+        startHeartbeat();
+    }
+
+    function startHeartbeat() {
+        if (state.heartbeatTimer) return;
+        state.heartbeatTimer = setInterval(() => {
+            if (state.isPlaying && !state.isUserPaused) {
+                // Ensure audio session is alive
+                if (state.silentAudio && state.silentAudio.paused) {
+                    state.silentAudio.play().catch(() => {});
+                }
+                // Check player state
+                if (state.player && state.player.getPlayerState) {
+                    const ps = state.player.getPlayerState();
+                    if (ps === YT.PlayerState.PAUSED || ps === YT.PlayerState.BUFFERING) {
+                        state.player.playVideo();
+                    }
+                }
+            }
+        }, 2000); // 2 second heartbeat
     }
 
     function stopBackgroundKeepAlive() {
@@ -829,6 +860,10 @@
 
     // --- Init ---
     function init() {
+        // Register Service Worker for better background performance
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js').catch(() => {});
+        }
         loadQueueFromStorage();
         renderSavedPlaylists();
         bindEvents();
