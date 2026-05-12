@@ -14,6 +14,7 @@
         ready: false,
         videoVisible: true,
         progressTimer: null,
+        silentAudio: null, // For background keep-alive
     };
 
     // --- DOM Cache ---
@@ -58,6 +59,89 @@
         savedList: $('#saved-list'),
     };
 
+    // --- Background Keep-Alive ---
+    function initSilentAudio() {
+        if (state.silentAudio) return;
+        // 1-second silent MP3 base64
+        const silentSrc = 'data:audio/wav;base64,UklGRigAAABXQVZFRm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=';
+        state.silentAudio = new Audio(silentSrc);
+        state.silentAudio.loop = true;
+    }
+
+    function startBackgroundKeepAlive() {
+        if (!state.silentAudio) initSilentAudio();
+        state.silentAudio.play().catch(() => {
+            // Might fail if no interaction, but we call this on user play
+        });
+    }
+
+    function stopBackgroundKeepAlive() {
+        if (state.silentAudio) {
+            state.silentAudio.pause();
+        }
+    }
+
+    // --- Media Session API ---
+    function updateMediaSession() {
+        if (!('mediaSession' in navigator)) return;
+
+        const track = state.queue[state.currentIndex];
+        if (!track) return;
+
+        navigator.mediaSession.metadata = new MediaMetadata({
+            title: track.title,
+            artist: 'CuongMC Music',
+            album: 'YouTube Player',
+            artwork: [
+                { src: `https://img.youtube.com/vi/${track.id}/default.jpg`, sizes: '96x96', type: 'image/jpeg' },
+                { src: `https://img.youtube.com/vi/${track.id}/mqdefault.jpg`, sizes: '320x180', type: 'image/jpeg' },
+                { src: `https://img.youtube.com/vi/${track.id}/hqdefault.jpg`, sizes: '480x360', type: 'image/jpeg' },
+            ]
+        });
+
+        // Set action handlers
+        const actions = {
+            play: () => togglePlay(),
+            pause: () => togglePlay(),
+            previoustrack: () => playPrev(),
+            nexttrack: () => playNext(),
+            seekbackward: (details) => {
+                const skipTime = details.seekOffset || 10;
+                state.player.seekTo(Math.max(state.player.getCurrentTime() - skipTime, 0), true);
+            },
+            seekforward: (details) => {
+                const skipTime = details.seekOffset || 10;
+                state.player.seekTo(Math.min(state.player.getCurrentTime() + skipTime, state.player.getDuration()), true);
+            },
+            seekto: (details) => {
+                if (details.fastSeek && 'fastSeek' in state.player) {
+                    state.player.seekTo(details.seekTime, true);
+                    return;
+                }
+                state.player.seekTo(details.seekTime, true);
+            }
+        };
+
+        for (const [action, handler] of Object.entries(actions)) {
+            try {
+                navigator.mediaSession.setActionHandler(action, handler);
+            } catch (error) {
+                // Action not supported
+            }
+        }
+    }
+
+    function updateMediaSessionPlaybackState() {
+        if (!('mediaSession' in navigator)) return;
+        navigator.mediaSession.playbackState = state.isPlaying ? 'playing' : 'paused';
+
+        if (state.isPlaying) {
+            startBackgroundKeepAlive();
+        } else {
+            stopBackgroundKeepAlive();
+        }
+    }
+
     // --- YouTube IFrame API ---
     function loadYTApi() {
         if (window.YT && window.YT.Player) { initPlayer(); return; }
@@ -99,10 +183,12 @@
             state.isPlaying = true;
             updatePlayBtn();
             startProgressTimer();
+            updateMediaSessionPlaybackState();
         } else if (e.data === YT.PlayerState.PAUSED) {
             state.isPlaying = false;
             updatePlayBtn();
             stopProgressTimer();
+            updateMediaSessionPlaybackState();
         } else if (e.data === YT.PlayerState.ENDED) {
             handleTrackEnd();
         }
@@ -196,6 +282,7 @@
         }
         renderQueue();
         updateProgressDisplay();
+        updateMediaSession();
     }
 
     function togglePlay() {
@@ -236,7 +323,7 @@
                 state.player.seekTo(0, true);
                 return;
             }
-        } catch (e) {}
+        } catch (e) { }
         let prev = state.currentIndex - 1;
         if (prev < 0) prev = state.repeat === 'all' ? state.queue.length - 1 : 0;
         loadTrack(prev, true);
@@ -254,7 +341,7 @@
 
     function resetPlayer() {
         if (state.player && state.ready) {
-            try { state.player.stopVideo(); } catch (e) {}
+            try { state.player.stopVideo(); } catch (e) { }
         }
         state.isPlaying = false;
         updatePlayBtn();
@@ -450,7 +537,7 @@
 
             // Timeout fallback
             setTimeout(() => {
-                try { tempPlayer.destroy(); tempDiv.remove(); } catch (e) {}
+                try { tempPlayer.destroy(); tempDiv.remove(); } catch (e) { }
                 resolve();
             }, 15000);
         });
@@ -481,7 +568,7 @@
         try {
             localStorage.setItem('cuongmc_queue', JSON.stringify(state.queue));
             localStorage.setItem('cuongmc_index', state.currentIndex);
-        } catch (e) {}
+        } catch (e) { }
     }
 
     function loadQueueFromStorage() {
@@ -493,7 +580,7 @@
                 state.currentIndex = isNaN(idx) ? 0 : Math.min(idx, q.length - 1);
                 renderQueue();
             }
-        } catch (e) {}
+        } catch (e) { }
     }
 
     // --- Named Playlists ---
