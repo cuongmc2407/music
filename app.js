@@ -15,6 +15,7 @@
         videoVisible: true,
         progressTimer: null,
         silentAudio: null, // For background keep-alive
+        isUserPaused: false, // Distinguish between user and system pause
     };
 
     // --- DOM Cache ---
@@ -63,9 +64,10 @@
     function initSilentAudio() {
         if (state.silentAudio) return;
         // 1-second silent MP3 base64
-        const silentSrc = 'data:audio/wav;base64,UklGRigAAABXQVZFRm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=';
+        const silentSrc = 'data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGFtZTMuOThyA7VvAAAAAAAAAAAAAAA//uQZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZ28AAAAPAAAAAgAAAHMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
         state.silentAudio = new Audio(silentSrc);
         state.silentAudio.loop = true;
+        state.silentAudio.volume = 0.01;
     }
 
     function startBackgroundKeepAlive() {
@@ -101,8 +103,14 @@
 
         // Set action handlers
         const actions = {
-            play: () => togglePlay(),
-            pause: () => togglePlay(),
+            play: () => {
+                state.isUserPaused = false;
+                state.player.playVideo();
+            },
+            pause: () => {
+                state.isUserPaused = true;
+                state.player.pauseVideo();
+            },
             previoustrack: () => playPrev(),
             nexttrack: () => playNext(),
             seekbackward: (details) => {
@@ -138,7 +146,8 @@
         if (state.isPlaying) {
             startBackgroundKeepAlive();
         } else {
-            stopBackgroundKeepAlive();
+            // Keep silent audio playing for a bit to maintain focus on mobile
+            // stopBackgroundKeepAlive();
         }
     }
 
@@ -185,6 +194,12 @@
             startProgressTimer();
             updateMediaSessionPlaybackState();
         } else if (e.data === YT.PlayerState.PAUSED) {
+            // If the video pauses while the tab is hidden (e.g. screen off),
+            // and it wasn't a user-initiated pause, try to resume.
+            if (document.hidden && !state.isUserPaused) {
+                state.player.playVideo();
+                return;
+            }
             state.isPlaying = false;
             updatePlayBtn();
             stopProgressTimer();
@@ -293,8 +308,10 @@
             return;
         }
         if (state.isPlaying) {
+            state.isUserPaused = true;
             state.player.pauseVideo();
         } else {
+            state.isUserPaused = false;
             state.player.playVideo();
         }
     }
@@ -748,6 +765,21 @@
             if (e.code === 'Space') { e.preventDefault(); togglePlay(); }
             if (e.code === 'ArrowRight') { e.preventDefault(); playNext(); }
             if (e.code === 'ArrowLeft') { e.preventDefault(); playPrev(); }
+        });
+
+        // Background Keep-Alive Trigger
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden && state.isPlaying) {
+                // Ensure silent audio is playing when backgrounded
+                startBackgroundKeepAlive();
+                
+                // Force YouTube to resume if it paused automatically
+                setTimeout(() => {
+                    if (state.isPlaying && state.player && state.player.playVideo) {
+                        state.player.playVideo();
+                    }
+                }, 100);
+            }
         });
     }
 
