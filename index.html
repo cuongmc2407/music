@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="CuongMC Music - Trình phát nhạc YouTube trực tuyến miễn phí. Nghe nhạc từ link YouTube hoặc danh sách phát.">
+    <title>CuongMC Music 🎵</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Animated background -->
+    <div class="bg-animation">
+        <div class="bg-orb bg-orb-1"></div>
+        <div class="bg-orb bg-orb-2"></div>
+        <div class="bg-orb bg-orb-3"></div>
+        <div class="bg-orb bg-orb-4"></div>
+    </div>
+
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="logo">
+                <div class="logo-icon">
+                    <svg viewBox="0 0 40 40" fill="none">
+                        <circle cx="20" cy="20" r="18" stroke="url(#logoGrad)" stroke-width="2.5"/>
+                        <circle cx="20" cy="20" r="6" fill="url(#logoGrad)"/>
+                        <circle cx="20" cy="20" r="12" stroke="url(#logoGrad)" stroke-width="1.5" stroke-dasharray="4 3"/>
+                        <defs>
+                            <linearGradient id="logoGrad" x1="0" y1="0" x2="40" y2="40">
+                                <stop offset="0%" stop-color="#a855f7"/>
+                                <stop offset="100%" stop-color="#ec4899"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                </div>
+                <h1 class="logo-text">CuongMC <span>Music</span></h1>
+            </div>
+            <div class="header-actions">
+                <button id="btn-theme" class="icon-btn" title="Đổi giao diện">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="5"/>
+                        <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Input Section -->
+            <section class="input-section glass-card">
+                <h2 class="section-title">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="section-icon">
+                        <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                        <path d="M2 17l10 5 10-5"/>
+                        <path d="M2 12l10 5 10-5"/>
+                    </svg>
+                    Thêm nhạc
+                </h2>
+
+                <!-- Tab switcher -->
+                <div class="tab-switcher">
+                    <button class="tab-btn active" data-tab="single" id="tab-single">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 18V5l12-2v13"/>
+                            <circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
+                        </svg>
+                        Link đơn
+                    </button>
+                    <button class="tab-btn" data-tab="playlist" id="tab-playlist">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/>
+                            <line x1="8" y1="18" x2="21" y2="18"/>
+                            <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/>
+                            <line x1="3" y1="18" x2="3.01" y2="18"/>
+                        </svg>
+                        Danh sách
+                    </button>
+                    <button class="tab-btn" data-tab="bulk" id="tab-bulk">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="3" width="18" height="18" rx="2"/>
+                            <path d="M3 9h18"/><path d="M3 15h18"/>
+                        </svg>
+                        Nhiều link
+                    </button>
+                    <div class="tab-indicator"></div>
+                </div>
+
+                <!-- Single link -->
+                <div class="tab-content active" id="content-single">
+                    <div class="input-group">
+                        <input type="text" id="input-url" class="text-input" 
+                               placeholder="Dán link YouTube vào đây... (vd: https://youtube.com/watch?v=...)" 
+                               autocomplete="off">
+                        <button id="btn-add-single" class="btn-primary">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                            </svg>
+                            Thêm
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Playlist -->
+                <div class="tab-content" id="content-playlist">
+                    <div class="input-group">
+                        <input type="text" id="input-playlist" class="text-input" 
+                               placeholder="Dán link playlist YouTube... (vd: https://youtube.com/playlist?list=...)" 
+                               autocomplete="off">
+                        <button id="btn-add-playlist" class="btn-primary">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                <path d="M21 15V6"/><path d="M18.5 18a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z"/>
+                                <path d="M12 12H3"/><path d="M16 6H3"/><path d="M12 18H3"/>
+                            </svg>
+                            Tải Playlist
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Bulk links -->
+                <div class="tab-content" id="content-bulk">
+                    <textarea id="input-bulk" class="text-input textarea" rows="5" 
+                              placeholder="Dán nhiều link YouTube, mỗi link một dòng..."></textarea>
+                    <button id="btn-add-bulk" class="btn-primary btn-full">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                        </svg>
+                        Thêm tất cả
+                    </button>
+                </div>
+            </section>
+
+            <!-- Player Section -->
+            <section class="player-section glass-card" id="player-section">
+                <div class="player-layout">
+                    <!-- Video / Thumbnail area -->
+                    <div class="player-visual">
+                        <div class="video-wrapper" id="video-wrapper">
+                            <div id="yt-player"></div>
+                            <div class="player-placeholder" id="player-placeholder">
+                                <div class="vinyl-record">
+                                    <div class="vinyl-outer">
+                                        <div class="vinyl-grooves"></div>
+                                        <div class="vinyl-label">
+                                            <svg viewBox="0 0 24 24" fill="currentColor" opacity="0.5">
+                                                <path d="M9 18V5l12-2v13M6 18a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM18 16a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                </div>
+                                <p class="placeholder-text">Thêm bài hát để bắt đầu nghe</p>
+                            </div>
+                        </div>
+                        <!-- Toggle video visibility -->
+                        <button id="btn-toggle-video" class="icon-btn btn-toggle-video" title="Ẩn/Hiện video" style="display:none;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                <circle cx="12" cy="12" r="3"/>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <!-- Now playing info -->
+                    <div class="now-playing-info" id="now-playing-info">
+                        <div class="track-info">
+                            <h3 class="track-title" id="track-title">Chưa có bài hát</h3>
+                            <p class="track-artist" id="track-artist">Thêm link YouTube để phát nhạc</p>
+                        </div>
+
+                        <!-- Progress bar -->
+                        <div class="progress-container" id="progress-container">
+                            <span class="time-label" id="time-current">0:00</span>
+                            <div class="progress-bar" id="progress-bar">
+                                <div class="progress-fill" id="progress-fill"></div>
+                                <div class="progress-thumb" id="progress-thumb"></div>
+                            </div>
+                            <span class="time-label" id="time-total">0:00</span>
+                        </div>
+
+                        <!-- Controls -->
+                        <div class="player-controls">
+                            <button id="btn-shuffle" class="control-btn" title="Phát ngẫu nhiên">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/>
+                                    <polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/>
+                                    <line x1="4" y1="4" x2="9" y2="9"/>
+                                </svg>
+                            </button>
+                            <button id="btn-prev" class="control-btn" title="Bài trước">
+                                <svg viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/>
+                                </svg>
+                            </button>
+                            <button id="btn-play" class="control-btn control-btn-main" title="Phát / Tạm dừng">
+                                <svg viewBox="0 0 24 24" fill="currentColor" id="icon-play">
+                                    <path d="M8 5v14l11-7z"/>
+                                </svg>
+                                <svg viewBox="0 0 24 24" fill="currentColor" id="icon-pause" style="display:none">
+                                    <path d="M6 4h4v16H6zM14 4h4v16h-4z"/>
+                                </svg>
+                            </button>
+                            <button id="btn-next" class="control-btn" title="Bài tiếp theo">
+                                <svg viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/>
+                                </svg>
+                            </button>
+                            <button id="btn-repeat" class="control-btn" title="Lặp lại">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/>
+                                    <polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>
+                                </svg>
+                            </button>
+                        </div>
+
+                        <!-- Volume -->
+                        <div class="volume-control">
+                            <button id="btn-mute" class="icon-btn" title="Tắt/Bật tiếng">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="icon-volume">
+                                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>
+                                </svg>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="icon-mute" style="display:none">
+                                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                                    <line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/>
+                                </svg>
+                            </button>
+                            <div class="volume-slider-wrap">
+                                <input type="range" id="volume-slider" class="volume-slider" min="0" max="100" value="80">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Playlist Queue -->
+            <section class="queue-section glass-card" id="queue-section">
+                <div class="queue-header">
+                    <h2 class="section-title">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="section-icon">
+                            <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/>
+                            <line x1="8" y1="18" x2="21" y2="18"/>
+                            <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/>
+                            <line x1="3" y1="18" x2="3.01" y2="18"/>
+                        </svg>
+                        Danh sách phát
+                        <span class="queue-count" id="queue-count">0 bài</span>
+                    </h2>
+                    <div class="queue-actions">
+                        <button id="btn-save-queue" class="btn-secondary" title="Lưu danh sách">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                                <polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>
+                            </svg>
+                            Lưu
+                        </button>
+                        <button id="btn-clear-queue" class="btn-secondary btn-danger" title="Xóa tất cả">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="3 6 5 6 21 6"/>
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                            </svg>
+                            Xóa hết
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Saved playlists -->
+                <div class="saved-playlists" id="saved-playlists" style="display:none;">
+                    <h3 class="saved-title">📁 Danh sách đã lưu</h3>
+                    <div class="saved-list" id="saved-list"></div>
+                </div>
+
+                <!-- Queue list -->
+                <div class="queue-list" id="queue-list">
+                    <div class="queue-empty" id="queue-empty">
+                        <svg viewBox="0 0 80 80" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3">
+                            <circle cx="40" cy="40" r="35"/>
+                            <path d="M30 28v24l20-12z"/>
+                        </svg>
+                        <p>Chưa có bài hát nào trong danh sách</p>
+                        <p class="queue-hint">Thêm link YouTube ở phần trên để bắt đầu</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="app-footer">
+            <p>Made with ❤️ by <strong>CuongMC</strong> • Powered by YouTube IFrame API</p>
+        </footer>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
